@@ -76,11 +76,11 @@ class ReflexAgent(Agent):
 
         "*** YOUR CODE HERE ***"
         
-        #Distancia a los fantasmas, y nos quedamos con la m��s cercana
+        #Distancia a los fantasmas, y nos quedamos con la mas cercana
         ghostDistances = [manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates]
         minGhostDistance = min(ghostDistances)
 
-        #Distancia a la comida, y nos quedamos con la m��s cercana
+        #Distancia a la comida, y nos quedamos con la mas cercana
         foodList = newFood.asList()
         foodDistances = [manhattanDistance(newPos, foodPos) for foodPos in foodList]
         minFoodDistance = min(foodDistances) if foodDistances else 0
@@ -88,10 +88,21 @@ class ReflexAgent(Agent):
         #Evaluacion basada en la distancia a la comida y a los fantasmas
         score = successorGameState.getScore()
         
-        score += 10 / (minFoodDistance+0.0001)  # Incentivar acercarse a la comida
+        score += 10 / (minFoodDistance+0.0001)  # Incentivar acercarse a la comida, se suma ese valor pata que no divida por cero
         score -= 5 / (minGhostDistance+0.0001)  # Penalizar acercarse a los fantasmas
+        score -= len(foodList) * 4  # Penalizar por la cantidad de comida restante
     
+        #Con lo anterior ya hace 4/4, pero no estamos teniendo en cuenta los puntos gordos ni si los fantasmas se pueden comer
+        for i, ghostState in enumerate(newGhostStates):
+            if newScaredTimes[i] > 0:
+                score += 200 / (manhattanDistance(newPos, ghostState.getPosition())+0.0001)  # Incentivar comer fantasmas asustados
         
+        capsules = successorGameState.getCapsules()
+        capsuleDistances = [manhattanDistance(newPos, capPos) for capPos in capsules]
+        minCapsuleDistance = min(capsuleDistances) if capsuleDistances else 0
+
+        #score += 50 / (minCapsuleDistance+0.0001)  # Incentivar acercarse a las capsulas, mayor puntuacion, porque es más importante
+
         
         return score
 
