@@ -102,7 +102,7 @@ class ReflexAgent(Agent):
         minCapsuleDistance = min(capsuleDistances) if capsuleDistances else 0
 
         #score += 50 / (minCapsuleDistance+0.0001)  # Incentivar acercarse a las capsulas, mayor puntuacion, porque es más importante
-
+        #Mirar si esto es realmente necesario, porque lo estamos llevando hacia alli cuando igual ni nos hace falta
         
         return score
 
@@ -169,7 +169,42 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        #Caso estado terminal
+        if game_state.isWin() or game_state.isLose():
+            return self.evaluationFunction(game_state)
+        
+        
+        if self.index == 0:  # Pacman (MAX)
+            return self.max_value(game_state, 0)
+        else:  # Ghosts (MIN)
+            return self.min_value(game_state, 0, self.index)
+
+    def max_value(self, game_state, depth):
+        v = float('-inf')
+        best_action = None
+        for action in game_state.getLegalActions(0):
+            successor = game_state.generateSuccessor(0, action)
+            value = self.getAction(successor)
+            
+            if value > v:   #Aquí es donde cambia el algoritmo, porque tenemos que devolver una acción y no el utility
+                v = value
+                best_action = action
+
+        return best_action
+        
+    def min_value(self, game_state, depth, agent_index):
+        v = float('inf')
+        num_agents = game_state.getNumAgents()
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            value=self.getAction(successor)
+            
+            if value < v:
+                v = value 
+                best_action = action    #Aquí igual que arriba
+
+        return best_action
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
