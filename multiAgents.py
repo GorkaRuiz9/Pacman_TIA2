@@ -170,41 +170,48 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         
-        #Caso estado terminal
-        if game_state.isWin() or game_state.isLose():
-            return self.evaluationFunction(game_state)
-        
-        
-        if self.index == 0:  # Pacman (MAX)
-            return self.max_value(game_state, 0)
-        else:  # Ghosts (MIN)
-            return self.min_value(game_state, 0, self.index)
-
-    def max_value(self, game_state, depth):
-        v = float('-inf')
+        best_score = float('-inf')
         best_action = None
-        for action in game_state.getLegalActions(0):
+        for action in game_state.getLegalActions(0): #Pacman es el agente 0
             successor = game_state.generateSuccessor(0, action)
-            value = self.getAction(successor)
-            
-            if value > v:   #Aquí es donde cambia el algoritmo, porque tenemos que devolver una acción y no el utility
-                v = value
+            score = self.getValue(successor, 1, 0)  # llama al siguiente agente, devuelve float
+            if score > best_score:
+                best_score = score
                 best_action = action
-
         return best_action
+
+    def getValue(self, game_state, agent_index, depth):
+
+        #Estado terminal o profundidad alcanzada
+        if game_state.isWin() or game_state.isLose() or depth == self.depth:
+            return self.evaluationFunction(game_state)
+
+        #Siguiente agente y profundidad, solo se amplia la profundidad cuando vuelve a Pacman
+        num_agents = game_state.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents #Siguiente agente, vuelve a 0 si es el ultimo
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0:
+            return self.maxValue(game_state, agent_index, next_depth)
+        else:
+            return self.minValue(game_state, agent_index, next_depth)
+
+    def maxValue(self, game_state, agent_index, depth): #Estos están implementados como en el PP
+        v = float('-inf')
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % game_state.getNumAgents(), depth)
+            v = max(v, score)
+        return v
         
-    def min_value(self, game_state, depth, agent_index):
+    def minValue(self, game_state, agent_index, depth):
         v = float('inf')
         num_agents = game_state.getNumAgents()
         for action in game_state.getLegalActions(agent_index):
             successor = game_state.generateSuccessor(agent_index, action)
-            value=self.getAction(successor)
-            
-            if value < v:
-                v = value 
-                best_action = action    #Aquí igual que arriba
-
-        return best_action
+            score = self.getValue(successor, (agent_index + 1) % num_agents, depth)
+            v = min(v, score)
+        return v
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -216,7 +223,56 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+       
+        best_score = float('-inf')
+        best_action = None
+        alfa = float('-inf')
+        beta = float('inf')
+        for action in game_state.getLegalActions(0): #Pacman es el agente 0
+            successor = game_state.generateSuccessor(0, action)
+            score = self.getValue(successor, 1, 0, alfa, beta)  # llama al siguiente agente, devuelve float
+            if score > best_score:
+                best_score = score
+                best_action = action
+            alfa = max(alfa, best_score) 
+        return best_action
+
+    def getValue(self, game_state, agent_index, depth, alfa, beta):
+
+        #Estado terminal o profundidad alcanzada
+        if game_state.isWin() or game_state.isLose() or depth == self.depth:
+            return self.evaluationFunction(game_state)
+
+        #Siguiente agente y profundidad, solo se amplia la profundidad cuando vuelve a Pacman
+        num_agents = game_state.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents #Siguiente agente, vuelve a 0 si es el ultimo
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0:
+            return self.maxValue(game_state, agent_index, next_depth, alfa, beta)
+        else:
+            return self.minValue(game_state, agent_index, next_depth, alfa, beta)
+
+    def maxValue(self, game_state, agent_index, depth,alfa,beta): #Estos están implementados como en el PP
+        v = float('-inf')
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % game_state.getNumAgents(), depth, alfa, beta)
+            v = max(v, score)
+            if v > beta: return v
+            alfa = max(alfa, v)
+        return v
+        
+    def minValue(self, game_state, agent_index, depth, alfa, beta):
+        v = float('inf')
+        num_agents = game_state.getNumAgents()
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % num_agents, depth, alfa, beta)
+            v = min(v, score)
+            if v < alfa: return v
+            beta = min(beta, v)
+        return v
 
 
 
