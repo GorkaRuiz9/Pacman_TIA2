@@ -75,35 +75,37 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        
-        #Distancia a los fantasmas, y nos quedamos con la mas cercana
+
+        # Distancia a los fantasmas, y nos quedamos con la mas cercana
         ghostDistances = [manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates]
         minGhostDistance = min(ghostDistances)
 
-        #Distancia a la comida, y nos quedamos con la mas cercana
+        # Distancia a la comida, y nos quedamos con la mas cercana
         foodList = newFood.asList()
         foodDistances = [manhattanDistance(newPos, foodPos) for foodPos in foodList]
         minFoodDistance = min(foodDistances) if foodDistances else 0
 
-        #Evaluacion basada en la distancia a la comida y a los fantasmas
+        # Evaluacion basada en la distancia a la comida y a los fantasmas
         score = successorGameState.getScore()
-        
-        score += 10 / (minFoodDistance+0.0001)  # Incentivar acercarse a la comida, se suma ese valor pata que no divida por cero
-        score -= 5 / (minGhostDistance+0.0001)  # Penalizar acercarse a los fantasmas
+
+        score += 10 / (
+                    minFoodDistance + 0.0001)  # Incentivar acercarse a la comida, se suma ese valor pata que no divida por cero
+        score -= 5 / (minGhostDistance + 0.0001)  # Penalizar acercarse a los fantasmas
         score -= len(foodList) * 4  # Penalizar por la cantidad de comida restante
-    
-        #Con lo anterior ya hace 4/4, pero no estamos teniendo en cuenta los puntos gordos ni si los fantasmas se pueden comer
+
+        # Con lo anterior ya hace 4/4, pero no estamos teniendo en cuenta los puntos gordos ni si los fantasmas se pueden comer
         for i, ghostState in enumerate(newGhostStates):
             if newScaredTimes[i] > 0:
-                score += 200 / (manhattanDistance(newPos, ghostState.getPosition())+0.0001)  # Incentivar comer fantasmas asustados
-        
+                score += 200 / (manhattanDistance(newPos,
+                                                  ghostState.getPosition()) + 0.0001)  # Incentivar comer fantasmas asustados
+
         capsules = successorGameState.getCapsules()
         capsuleDistances = [manhattanDistance(newPos, capPos) for capPos in capsules]
         minCapsuleDistance = min(capsuleDistances) if capsuleDistances else 0
 
-        #score += 50 / (minCapsuleDistance+0.0001)  # Incentivar acercarse a las capsulas, mayor puntuacion, porque es más importante
-        #Mirar si esto es realmente necesario, porque lo estamos llevando hacia alli cuando igual ni nos hace falta
-        
+        # score += 50 / (minCapsuleDistance+0.0001)  # Incentivar acercarse a las capsulas, mayor puntuacion, porque es más importante
+        # Mirar si esto es realmente necesario, porque lo estamos llevando hacia alli cuando igual ni nos hace falta
+
         return score
 
 
@@ -169,42 +171,50 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        
-        #Caso estado terminal
-        if game_state.isWin() or game_state.isLose():
-            return self.evaluationFunction(game_state)
-        
-        
-        if self.index == 0:  # Pacman (MAX)
-            return self.max_value(game_state, 0)
-        else:  # Ghosts (MIN)
-            return self.min_value(game_state, 0, self.index)
 
-    def max_value(self, game_state, depth):
-        v = float('-inf')
+        best_score = float('-inf')
         best_action = None
-        for action in game_state.getLegalActions(0):
+        for action in game_state.getLegalActions(0):  # Pacman es el agente 0
             successor = game_state.generateSuccessor(0, action)
-            value = self.getAction(successor)
-            
-            if value > v:   #Aquí es donde cambia el algoritmo, porque tenemos que devolver una acción y no el utility
-                v = value
+            score = self.getValue(successor, 1, 0)  # llama al siguiente agente, devuelve float
+            if score > best_score:
+                best_score = score
                 best_action = action
-
         return best_action
-        
-    def min_value(self, game_state, depth, agent_index):
+
+    def getValue(self, game_state, agent_index, depth):
+
+        # Estado terminal o profundidad alcanzada
+        if game_state.isWin() or game_state.isLose() or depth == self.depth:
+            return self.evaluationFunction(game_state)
+
+        # Siguiente agente y profundidad, solo se amplia la profundidad cuando vuelve a Pacman
+        num_agents = game_state.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents  # Siguiente agente, vuelve a 0 si es el ultimo
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0:
+            return self.maxValue(game_state, agent_index, next_depth)
+        else:
+            return self.minValue(game_state, agent_index, next_depth)
+
+    def maxValue(self, game_state, agent_index, depth):  # Estos están implementados como en el PP
+        v = float('-inf')
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % game_state.getNumAgents(), depth)
+            v = max(v, score)
+        return v
+
+    def minValue(self, game_state, agent_index, depth):
         v = float('inf')
         num_agents = game_state.getNumAgents()
         for action in game_state.getLegalActions(agent_index):
             successor = game_state.generateSuccessor(agent_index, action)
-            value=self.getAction(successor)
-            
-            if value < v:
-                v = value 
-                best_action = action    #Aquí igual que arriba
+            score = self.getValue(successor, (agent_index + 1) % num_agents, depth)
+            v = min(v, score)
+        return v
 
-        return best_action
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -216,8 +226,56 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
 
+        best_score = float('-inf')
+        best_action = None
+        alfa = float('-inf')
+        beta = float('inf')
+        for action in game_state.getLegalActions(0):  # Pacman es el agente 0
+            successor = game_state.generateSuccessor(0, action)
+            score = self.getValue(successor, 1, 0, alfa, beta)  # llama al siguiente agente, devuelve float
+            if score > best_score:
+                best_score = score
+                best_action = action
+            alfa = max(alfa, best_score)  # Actualizar alfa aqui tambien!!!
+        return best_action
+
+    def getValue(self, game_state, agent_index, depth, alfa, beta):
+
+        # Estado terminal o profundidad alcanzada
+        if game_state.isWin() or game_state.isLose() or depth == self.depth:
+            return self.evaluationFunction(game_state)
+
+        # Siguiente agente y profundidad, solo se amplia la profundidad cuando vuelve a Pacman
+        num_agents = game_state.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents  # Siguiente agente, vuelve a 0 si es el ultimo
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0:
+            return self.maxValue(game_state, agent_index, next_depth, alfa, beta)
+        else:
+            return self.minValue(game_state, agent_index, next_depth, alfa, beta)
+
+    def maxValue(self, game_state, agent_index, depth, alfa, beta):  # Estos están implementados como en el PP
+        v = float('-inf')
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % game_state.getNumAgents(), depth, alfa, beta)
+            v = max(v, score)
+            if v > beta: return v
+            alfa = max(alfa, v)
+        return v
+
+    def minValue(self, game_state, agent_index, depth, alfa, beta):
+        v = float('inf')
+        num_agents = game_state.getNumAgents()
+        for action in game_state.getLegalActions(agent_index):
+            successor = game_state.generateSuccessor(agent_index, action)
+            score = self.getValue(successor, (agent_index + 1) % num_agents, depth, alfa, beta)
+            v = min(v, score)
+            if v < alfa: return v
+            beta = min(beta, v)
+        return v
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -233,8 +291,48 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        best_score = float('-inf')
+        best_action = None
 
+        for action in gameState.getLegalActions(0):  # Pacman es el agente 0
+            successor = gameState.generateSuccessor(0, action)
+            score = self.getValue(successor, 1, 0)  # llama al siguiente agente
+            if score > best_score:
+                best_score = score
+                best_action = action
+
+        return best_action
+
+    def getValue(self, gameState, agent_index, depth):
+        # Estado terminal o profundidad alcanzada
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        num_agents = gameState.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0: #Si es Pacman llama a max para maximizar puntuación, si es fantasma llamamos a promedio al ser movimientos al azar
+            return self.maxValue(gameState, next_agent, next_depth)
+        else:
+            return self.promedio(gameState, agent_index, next_depth)
+
+    def maxValue(self, gameState, agent_index, depth):
+        v = float('-inf')
+        for action in gameState.getLegalActions(0):  # Pacman
+            successor = gameState.generateSuccessor(0, action)
+            v = max(v, self.getValue(successor, agent_index, depth))
+        return v
+    def promedio(self, gameState, agent_index, depth):
+        actions = gameState.getLegalActions(agent_index)
+        if not actions:
+            return self.evaluationFunction(gameState)
+        promedio = 0
+        prob = 1 / len(actions)  # probabilidad de movimientos
+        for action in actions:
+            successor = gameState.generateSuccessor(agent_index, action)
+            promedio += prob * self.getValue(successor, (agent_index + 1) % gameState.getNumAgents(), depth)
+        return promedio
 
 def betterEvaluationFunction(currentGameState):
     """
