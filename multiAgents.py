@@ -234,7 +234,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if score > best_score:
                 best_score = score
                 best_action = action
-            alfa = max(alfa, best_score) 
+            alfa = max(alfa, best_score) #Actualizar alfa aqui tambien!!!
         return best_action
 
     def getValue(self, game_state, agent_index, depth, alfa, beta):
