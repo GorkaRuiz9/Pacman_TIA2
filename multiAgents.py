@@ -312,7 +312,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         next_agent = (agent_index + 1) % num_agents
         next_depth = depth + 1 if next_agent == 0 else depth
 
-        if agent_index == 0: #Si es Pacman llama a max para maximizar puntuación, si es fantasma llamamos a promedio al ser movimientos al azar
+        if agent_index == 0: #Si es Pacman llama a max para maximizar puntuación, si es fantasma llamamos a expV al ser movimientos al azar
             return self.maxValue(gameState, next_agent, next_depth)
         else:
             return self.expV(gameState, agent_index, next_depth)
