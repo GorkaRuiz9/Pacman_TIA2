@@ -315,7 +315,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         if agent_index == 0: #Si es Pacman llama a max para maximizar puntuación, si es fantasma llamamos a promedio al ser movimientos al azar
             return self.maxValue(gameState, next_agent, next_depth)
         else:
-            return self.promedio(gameState, agent_index, next_depth)
+            return self.expV(gameState, agent_index, next_depth)
 
     def maxValue(self, gameState, agent_index, depth):
         v = float('-inf')
@@ -323,7 +323,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             successor = gameState.generateSuccessor(0, action)
             v = max(v, self.getValue(successor, agent_index, depth))
         return v
-    def promedio(self, gameState, agent_index, depth):
+    def expV(self, gameState, agent_index, depth):
         actions = gameState.getLegalActions(agent_index)
         if not actions:
             return self.evaluationFunction(gameState)
@@ -348,6 +348,8 @@ def betterEvaluationFunction(currentGameState):
 
     "*** YOUR CODE HERE ***"
     util.raiseNotDefined()
+
+
 
 
 # Abbreviation
