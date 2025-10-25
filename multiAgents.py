@@ -280,7 +280,6 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
     """
-
     def getAction(self, gameState):
         """
         Returns the expectimax action using self.depth and self.evaluationFunction
@@ -289,8 +288,48 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        best_score = float('-inf')
+        best_action = None
 
+        for action in gameState.getLegalActions(0):  # Pacman es el agente 0
+            successor = gameState.generateSuccessor(0, action)
+            score = self.getValue(successor, 1, 0)  # llama al siguiente agente
+            if score > best_score:
+                best_score = score
+                best_action = action
+
+        return best_action
+
+    def getValue(self, gameState, agent_index, depth):
+        # Estado terminal o profundidad alcanzada
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        num_agents = gameState.getNumAgents()
+        next_agent = (agent_index + 1) % num_agents
+        next_depth = depth + 1 if next_agent == 0 else depth
+
+        if agent_index == 0: #Si es Pacman llama a max para maximizar puntuación, si es fantasma llamamos a expV al ser movimientos al azar
+            return self.maxValue(gameState, next_agent, next_depth)
+        else:
+            return self.expV(gameState, agent_index, next_depth)
+
+    def maxValue(self, gameState, agent_index, depth):
+        v = float('-inf')
+        for action in gameState.getLegalActions(0):  # Pacman
+            successor = gameState.generateSuccessor(0, action)
+            v = max(v, self.getValue(successor, agent_index, depth))
+        return v
+    def expV(self, gameState, agent_index, depth):
+        actions = gameState.getLegalActions(agent_index)
+        if not actions:
+            return self.evaluationFunction(gameState)
+        promedio = 0
+        prob = 1 / len(actions)  # probabilidad de movimientos
+        for action in actions:
+            successor = gameState.generateSuccessor(agent_index, action)
+            promedio += prob * self.getValue(successor, (agent_index + 1) % gameState.getNumAgents(), depth)
+        return promedio
 
 def betterEvaluationFunction(currentGameState):
     """
@@ -310,3 +349,4 @@ def betterEvaluationFunction(currentGameState):
 
 # Abbreviation
 better = betterEvaluationFunction
+
